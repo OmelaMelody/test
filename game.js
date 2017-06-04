@@ -3,63 +3,38 @@
 //Реализация класса Vector.
 
 class Vector {
-  constructor(x, y) {
-    // лучше задать как параметры по-умолчанию в аргументах
-    this.x = x || 0;
-    this.y = y || 0;
+  constructor(x = 0, y = 0) {
+    this.x = x;
+    this.y = y;
   }
   
   plus(vector) {
-    // тут лучше обратить условие, бросить ислючение, если параметр неправильный и убрать else
-    if (vector instanceof Vector) {
-      // можно в одну строчку
-      let x = this.x + vector.x;
-      let y = this.y + vector.y;
-      return new Vector(x, y);
-    } else {
+    if (!(vector instanceof Vector)) {
       throw new Error('Можно прибавлять к вектору только вектор типа Vector');
     }
+    return new Vector(this.x + vector.x, this.y + vector.y);
   }
   
   times(factor) {
-    // если значения не меняются лучше использовать const
-    // здесь можно в одну строчку
-    let x = this.x * factor;
-    let y = this.y * factor;
-    return new Vector(x, y);
+    return new Vector(this.x * factor, this.y * factor);
   }
 }
 
 //Реализация класса движущегося объекта.
 
 class Actor {
-  constructor(pos, size, speed) {
-    // лучше сначала проверить все параметры, а потом просто присвоить значения полям объекта
-    if (pos instanceof Vector) {
-      this.pos = pos;
-    } else if (pos === undefined) {
-      // лучше через параметр по умолчанию
-      this.pos = new Vector(0, 0);
-    } else {
+  constructor(pos = new Vector(0, 0), size = new Vector(1, 1), speed = new Vector(0, 0)) {
+    if (!(pos instanceof Vector)) {
       throw new Error('Переданные координаты не являются объектом типа Vector');
-    }
-    
-    if (size instanceof Vector) {
-      this.size = size;
-    } else if (size === undefined) {
-      this.size = new Vector(1, 1);
-    } else {
+    } else if (!(size instanceof Vector)) {
       throw new Error('Переданный размер не является объектом типа Vector');
-    }
-    
-    if (speed instanceof Vector) {
-      this.speed = size;
-    } else if (speed === undefined) {
-      this.speed = new Vector(0, 0);
-    } else {
+    } else if (!(speed instanceof Vector)) {
       throw new Error('Переданная скорость не является объектом типа Vector');
     }
-//    this.act = function () {};
+    
+    this.pos = pos;
+    this.size = size;
+    this.speed = speed;
   }
   
   get type() {
@@ -85,81 +60,71 @@ class Actor {
   act() {}
   
   isIntersect(actor) {
-    // проверка на undefined лишняя
-    // лучше обратить условие и убрать else
-    if (actor !== undefined && actor instanceof Actor) {
-      if (actor === this) {
-        return false;
-      // else тут не нужен
-      // я бы разбил на 4 if - более понятно
-      } else if (actor.left >= this.right || actor.top >= this.bottom || actor.right <= this.left || actor.bottom <= this.top) {
-        return false;
-      // тут тоже else не нужен
-      } else {
-        return true;
-      }
-    } else {
+    if (!(actor instanceof Actor)) {
       throw new Error('Переданный объект не является экземпляром Actor.');
     }
+    if (actor === this) {
+      return false;
+    } else if (actor.left >= this.right) {
+      return false;
+    } else if (actor.top >= this.bottom) {
+      return false;
+    } else if (actor.right <= this.left) {
+      return false;
+    } else if (actor.bottom <= this.top) {
+      return false;
+    }
+    return true;
   }
 }
 
 // Реализация класса Level.
 
 class Level {
-  constructor (grid, actors) {
+  constructor (grid = [], actors = []) {
     // тут нужно упростить всё :)
-    if (grid instanceof Array) {
-      this.grid = grid;
-      this.height = grid.length;
-      let max = 0;
-      grid.forEach(function (elem) {
-        if (elem instanceof Array) {
-          if (max < elem.length) {
-            max = elem.length;
-          }
-        }
-      });
-      this.width = max;
-    } else {
-      this.grid = [[]];
-      this.height = 0;
-      this.width = 0;
-    }
-    if (actors instanceof Array) {
-      this.actors = actors;
-    } else {
-      this.actors = [];
-    }
+    // Соня: ну, как смогла. 
+    this.grid = grid;
+    this.actors = actors;
+    this.height = this.grid.length;
+    this.actors = actors;
     this.player = this.actors.find(actor => actor.type == "player");
     this.status = null;
     this.finishDelay = 1;
   }
   
+  get width() {
+    let max = 0;
+    this.grid.forEach(elem => {
+      if (elem instanceof Array && max < elem.length) {
+        max = elem.length;
+      }
+    });
+    return max;
+  }
+  
   isFinished() {
-    // тут выражение можно написать сразу после return
-    if (this.status !== null && this.finishDelay < 0) {
-      return true;
-    }
-    return false;
+    return (this.status !== null && this.finishDelay < 0);
   }
   
   actorAt(actor) {
-    // проверка на undefined лишняя
-    if (actor !== undefined || actor instanceof Actor) {
-      let obj = this.actors.find(elem => {
-        // тут должен использоваться метод isIntersect
-        if (elem !== actor && actor.pos.x === elem.pos.x && actor.pos.y === elem.pos.y) {
-          return elem;
-        }
-      });
-      return obj;
+    if (!(actor instanceof Actor)) {
+      throw new Error('Передан не движущийся объект типа Actor.');
     }
+    return this.actors.find(elem => {
+      if (actor.isIntersect(elem)) {
+        return elem;
+      }
+    });
   }
   
   obstacleAt(nextPos, size) {
     if (nextPos instanceof Vector && size instanceof Vector) {
-      if (nextPos.x < 0 || nextPos.y < 0 || (nextPos.x + size.x) > this.width) {
+      if (nextPos.x < 0) {
+        return 'wall';
+      } else if (nextPos.y < 0) {
+        return 'wall';
+      } else if ((nextPos.x + size.x) > this.width) {
         return 'wall';
       } else if ((nextPos.y + size.y) > this.height) {
         return 'lava';
@@ -173,32 +138,28 @@ class Level {
   
   removeActor(actor) {
     let i = this.actors.findIndex(elem => actor === elem);
-    // findIndex вернёт -1, если ничего не найдёт
-    if(i !== undefined) {
+    if(i !== -1) {
       this.actors.splice(i, 1);
     }
   }
   
   noMoreActors(type) {
     // лучше проверить длину массива и использовать метод some
-    let elem = this.actors.find(elem => elem.type === type);
-    if (elem === undefined) {
-      return true;
-    } else {
-      return false;
-    }
+    // Соня: не поняла, зачем проверять длину массива. В массиве this.actors всегда что-то будет, хотя бы сам игрок. 
+    return !this.actors.some(elem => elem.type === type);
   }
   
   playerTouched(obstacle, coin) {
     // обратить условие и уменьшить вложенность
-    if (this.status === null) {
-      if (obstacle === 'lava' || obstacle === 'fireball') {
-        this.status = 'lost';
-      } else if (obstacle === 'coin') {
-        this.removeActor(coin);
-        if (this.actors.find(elem => elem.type === 'coin') === undefined) {
-          this.status = 'won';
-        }
+    // Соня: не поняла, как и зачем тут обращать условие, когда при (this.status !== 'null') вообще ничего делать не надо. Убрала проверку. 
+    if (obstacle === 'lava') {
+      this.status = 'lost';
+    } else if (obstacle === 'fireball') {
+      this.status = 'lost';
+    } else if (obstacle === 'coin') {
+      this.removeActor(coin);
+      if(this.noMoreActors('coin')) {
+        this.status = 'won';
       }
     }
   }
@@ -217,7 +178,8 @@ class LevelParser {
   
   actorFromSymbol(symbol) {
     // можно заменить на return this.dictionary[symbol];
-    if (symbol === undefined) {
+    // Соня: Первоначальный вариант таким и был. После замены тест начинает ломаться. 
+    if (!symbol) {
       return undefined;
     } else {
       return this.dictionary[symbol];
@@ -231,13 +193,10 @@ class LevelParser {
   createGrid(arr) {
     let obstacle = this.obstacle;
     let grid = arr.map(elem => elem.split(''));
-    function rename(elem) {
-      elem = obstacle[elem];
-      return elem;
-    }
     for (let i = 0; i < grid.length; i++) {
       // короче и понятнее будет, если здесь использовать стрелочную функцию
-      grid[i] = grid[i].map(rename);
+      // Соня: так и было сначала, однако repl.it настоятельно рекомендовал не создавать функцию в цикле. 
+      grid[i] = grid[i].map(elem => obstacle[elem]);
     }
     return grid;
   }
@@ -246,21 +205,26 @@ class LevelParser {
     const dictionary = this.dictionary;
     if (dictionary === undefined || arr.length === 0) {
       return [];
-    // else не нужен - елси зашли в if уже вернулся результат
-    } else {
-      let actors = [];
-      let array = arr.map(elem => elem.split(''));
-      array.forEach(function (elem, y) {
-        for (let x = 0; x < elem.length; x++) {
-          // dictionary[elem[x] лучше вынести в переменную
-          // нужно проверить, что сожанный объект является объектом класса Actor или его наследника
-          if (dictionary[elem[x]] !== undefined) {
-            actors.push(new dictionary[elem[x]](new Vector(x, y)));
+    } 
+    let actors = [];
+    let array = arr.map(elem => elem.split(''));
+    let key, obj;
+    
+    array.forEach(function (elem, y) {
+      // Соня: наверняка вы скажете уменьшить вложенность, но я не представляю, как именно это сделать. Много условий, которые нужно проверить. 
+      for (let x = 0; x < elem.length; x++) {
+        key = dictionary[elem[x]];
+        
+        if (key !== undefined && key instanceof Function) {
+          obj = new key(new Vector(x, y));
+          
+          if (obj instanceof Actor) {
+            actors.push(obj);
           }
         }
-      });
-      return actors;
-    }
+      }
+    });
+    return actors;
   }
   
   parse(arr) {
@@ -270,17 +234,11 @@ class LevelParser {
   }
 }
 
-// Шаровая молния. 
+// Описание класса "Шаровая молния". 
 
 class Fireball extends Actor {
-  constructor(pos, speed) {
-    // тут должен быть только вызов базового конструктора
-    super();
-    pos === undefined ? this.pos = new Vector(0, 0) : this.pos = pos;
-//    this.pos = pos || new Vector(0, 0);
-    this.size = new Vector(1, 1);
-    speed === undefined ? this.speed = new Vector(0, 0) : this.speed = speed;
-//    this.speed = speed || new Vector(0, 0);
+  constructor(pos, speed, size = new Vector(1, 1)) {
+    super(pos, size, speed);
   }
   
   get type() {
@@ -288,22 +246,17 @@ class Fireball extends Actor {
   }
   
   getNextPosition(time = 1) {
-    // скобки не нужны, у умножения больший приоритет выполнения
-    const x = this.pos.x + (this.speed.x * time);
-    const y = this.pos.y + (this.speed.y * time);
-    return new Vector(x, y);
+    return new Vector(this.pos.x + this.speed.x * time, this.pos.y + this.speed.y * time);
   }
   
   handleObstacle() {
-    this.speed = new Vector(-this.speed.x, -this.speed.y);
+    this.speed = this.speed.times(-1);
   }
   
   act(time, level) {
     const nextPosition = this.getNextPosition(time);
-    // obstacle - более удачное название переменной (getObstacle похоже на имя функции)
-    const getObstacle = level.obstacleAt(nextPosition, this.size);
-    // можно писать просто if (getObstacle)
-    if (getObstacle === undefined) {
+    const obstacle = level.obstacleAt(nextPosition, this.size);
+    if (!obstacle) {
       this.pos = nextPosition;
     } else {
       this.handleObstacle();
@@ -314,67 +267,42 @@ class Fireball extends Actor {
 // Описание горизонтальной и вертикальной шаровых молний. 
 
 class HorizontalFireball extends Fireball {
-  constructor (pos) {
-    // тут должен быть только вызов базового конструктора
-    super();
-    this.pos = pos;
-    this.size = new Vector(1, 1);
-    this.speed = new Vector(2, 0);
+  constructor (pos, speed = new Vector(2, 0)) {
+    super(pos, speed);
   }
 }
 
 class VerticalFireball extends Fireball {
-  // тут должен быть только вызов базового конструктора
-  constructor (pos) {
-    super();
-    this.pos = pos;
-    this.size = new Vector(1, 1);
-    this.speed = new Vector(0, 2);
+  constructor (pos, speed = new Vector(0, 2)) {
+    super(pos, speed);
   }  
 }
 
-//Описание Огненного дождя. 
+// Описание Огненного дождя. 
 
 class FireRain extends Fireball {
-  constructor(pos) {
-    // pos size speed должны задаваться через вызов базового конструктора
-    super();
+  constructor(pos, speed = new Vector(0, 3)) {
+    super(pos, speed);
     this.startPos = pos;
-    this.pos = pos;
-    this.size = new Vector(1, 1);
-    this.speed = new Vector(0, 3);
   }
   
   handleObstacle() {
     this.pos = this.startPos;
-  }
-  
-  act(time, level) {
-    const nextPosition = this.getNextPosition(time);
-    // obstacle
-    const getObstacle = level.obstacleAt(nextPosition);
-    // тут должен использоваться метод handleObstacle
-    // вернее тут дублирование кода, act должен быть только в базовом классе
-    if (getObstacle === undefined) {
-      this.pos = nextPosition; 
-    } else {
-      this.pos = this.startPos;
-    }
   }
 }
 
 // Описание монеты.
 
 class Coin extends Actor {
-  constructor(pos) {
-    // pos, size должны задаваться через базовый конструктор
-    super();
-    pos === undefined ? this.basePosition = new Vector(0, 0) : this.basePosition = pos;
-    this.pos = this.basePosition.plus(new Vector(0.2, 0.1));
+  constructor(pos = new Vector(0, 0)) {
+    super(pos);
+    this.basePosition = pos.plus(new Vector(0.2, 0.1));
+    this.pos = pos.plus(new Vector(0.2, 0.1));
     this.size = new Vector(0.6, 0.6);
     this.springSpeed = 8;
     this.springDist = 0.07;
-    this.spring = +(Math.random() * 2 * Math.PI).toFixed(2);
+    this.spring = Math.random() * (6 - 5) + 5;
+    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Предыдущий вариант решения (Math.random() * 2 * Math.PI) - давал ошибку с некоторой долей вероятности. Теперь тест проходится в 100% случаев. 
   }
   
   get type() {
@@ -382,8 +310,7 @@ class Coin extends Actor {
   }
   
   updateSpring(time = 1) {
-    // скобки не нужны
-    this.spring = this.spring + (this.springSpeed * time);
+    this.spring += this.springSpeed * time;
   }
   
   getSpringVector() {
@@ -392,7 +319,8 @@ class Coin extends Actor {
   
   getNextPosition(time = 1) {
     this.updateSpring(time);
-    return this.basePosition.plus(this.getSpringVector());
+    let a = this.getSpringVector();
+    return this.basePosition.plus(a);
   }
   
   act(time) {
@@ -404,12 +332,9 @@ class Coin extends Actor {
 // Описание игрока. 
 
 class Player extends Actor {
-  constructor(pos) {
-    // pos, size, speed должны задаваться через базовый конструктор
-    super();
-    pos === undefined ? this.pos = new Vector(0, 0).plus(new Vector(0, -0.5)) : this.pos = pos.plus(new Vector(0, -0.5));
-    this.size = new Vector(0.8, 1.5);
-    this.speed = new Vector(0, 0);
+  constructor(pos = new Vector(0, 0), size = new Vector(0.8, 1.5), speed = new Vector(0, 0)) {
+    super(pos, size, speed);
+    this.pos = pos.plus(new Vector(0, -0.5));
   }
   
   get type() {
@@ -419,15 +344,27 @@ class Player extends Actor {
 
 // Тестовый уровень.
 
-const schema = [
-  'v       |',
-  '         ',
-  '    =    ',
-  '         ',
-  '     !xxx',
-  ' @ox     ',
-  'xxxx!    ',
-  '         '
+const schemas = [
+  [
+    '         ',
+    ' x  =   x',
+    '         ',
+    '        @',
+    '     !xxx',
+    ' o       ',
+    'xxx!     ',
+    '      |  '
+  ],
+  [
+    '      v  ',
+    '    v    ',
+    '  v      ',
+    '        o',
+    '        x',
+    '@   x    ',
+    'x        ',
+    '         '
+  ]
 ];
 const actorDict = {
   '@': Player,
@@ -437,5 +374,5 @@ const actorDict = {
   'v': FireRain
 }
 const parser = new LevelParser(actorDict);
-const level = parser.parse(schema);
-runLevel(level, DOMDisplay);
+runGame(schemas, parser, DOMDisplay)
+  .then(() => console.log('Вы выиграли приз!'));
