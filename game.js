@@ -124,14 +124,24 @@ class Level {
         return 'wall';
       } else if (nextPos.y < 0) {
         return 'wall';
-      } else if ((nextPos.x + size.x) > this.width) {
+      } else if ((nextPos.x + size.x) >= this.width) {
         return 'wall';
-      } else if ((nextPos.y + size.y) > this.height) {
+      } else if ((nextPos.y + size.y) >= this.height) {
         return 'lava';
-      } else {
-        let x = Math.ceil(nextPos.x);
-        let y = Math.ceil(nextPos.y);
-        return this.grid[y][x];
+      }
+      let x, y, cell;
+      const xMin = Math.floor(nextPos.x);
+      const xMax = Math.ceil(nextPos.x + size.x);
+      const yMin = Math.floor(nextPos.y);
+      const yMax = Math.ceil(nextPos.y + size.y);
+      // Соня: если опять посоветуется уменьшить вложенность, то придется пояснить, как это сделать. Смогла только else убрать. Кажется, тут оно не нужно. 
+      for (let y = yMin; y < yMax; y++) {
+        for (let x = xMin; x < xMax; x++) {           
+          cell = this.grid[y][x]
+          if (cell) {
+            return cell;
+          }
+        }
       }
     }
   }
@@ -177,8 +187,6 @@ class LevelParser {
   }
   
   actorFromSymbol(symbol) {
-    // можно заменить на return this.dictionary[symbol];
-    // Соня: Первоначальный вариант таким и был. После замены тест начинает ломаться. 
     if (!symbol) {
       return undefined;
     } else {
@@ -194,8 +202,6 @@ class LevelParser {
     let obstacle = this.obstacle;
     let grid = arr.map(elem => elem.split(''));
     for (let i = 0; i < grid.length; i++) {
-      // короче и понятнее будет, если здесь использовать стрелочную функцию
-      // Соня: так и было сначала, однако repl.it настоятельно рекомендовал не создавать функцию в цикле. 
       grid[i] = grid[i].map(elem => obstacle[elem]);
     }
     return grid;
@@ -348,7 +354,7 @@ const schemas = [
   [
     '         ',
     ' x  =   x',
-    '         ',
+    ' v       ',
     '        @',
     '     !xxx',
     ' o       ',
