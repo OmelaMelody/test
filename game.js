@@ -307,8 +307,8 @@ class Coin extends Actor {
     this.size = new Vector(0.6, 0.6);
     this.springSpeed = 8;
     this.springDist = 0.07;
-    this.spring = Math.random() * (6 - 5) + 5;
-    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Предыдущий вариант решения (Math.random() * 2 * Math.PI) - давал ошибку с некоторой долей вероятности. Теперь тест проходится в 100% случаев. 
+    this.spring = Math.random() * 2 * Math.PI;
+    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Текущее решение дает ошибку с некоторой долей вероятности. Со 100% вероятностью тест можно пройти только при таком решении this.spring = Math.random() * (6 - 5) + 5; - и оно неправильное.  
   }
   
   get type() {
@@ -348,30 +348,8 @@ class Player extends Actor {
   }
 }
 
-// Тестовый уровень.
+// Добавление уровней. 
 
-const schemas = [
-  [
-    '         ',
-    ' x  =   x',
-    ' v       ',
-    '        @',
-    '     !xxx',
-    ' o       ',
-    'xxx!     ',
-    '      |  '
-  ],
-  [
-    '      v  ',
-    '    v    ',
-    '  v      ',
-    '        o',
-    '        x',
-    '@   x    ',
-    'x        ',
-    '         '
-  ]
-];
 const actorDict = {
   '@': Player,
   'o': Coin,
@@ -380,5 +358,8 @@ const actorDict = {
   'v': FireRain
 }
 const parser = new LevelParser(actorDict);
-runGame(schemas, parser, DOMDisplay)
-  .then(() => console.log('Вы выиграли приз!'));
+
+loadLevels()
+  .then(JSON.parse)
+  .then(levels => runGame(levels, parser, DOMDisplay)
+       .then(() => alert('Вы победили!')));
