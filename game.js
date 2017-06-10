@@ -124,7 +124,7 @@ class Level {
         return 'wall';
       } else if (nextPos.y < 0) {
         return 'wall';
-      } else if ((nextPos.x + size.x) >= this.width) {
+      } else if (nextPos.x + size.x > this.width) {
         return 'wall';
       } else if ((nextPos.y + size.y) >= this.height) {
         return 'lava';
@@ -134,7 +134,7 @@ class Level {
       const xMax = Math.ceil(nextPos.x + size.x);
       const yMin = Math.floor(nextPos.y);
       const yMax = Math.ceil(nextPos.y + size.y);
-      // Соня: если опять посоветуется уменьшить вложенность, то придется пояснить, как это сделать. Смогла только else убрать. Кажется, тут оно не нужно. 
+      // Соня: если опять посоветуете уменьшить вложенность, то придется пояснить, как это сделать. Смогла только else убрать. Кажется, тут не нужно. 
       for (let y = yMin; y < yMax; y++) {
         for (let x = xMin; x < xMax; x++) {           
           cell = this.grid[y][x]
@@ -308,7 +308,7 @@ class Coin extends Actor {
     this.springSpeed = 8;
     this.springDist = 0.07;
     this.spring = Math.random() * 2 * Math.PI;
-    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Текущее решение дает ошибку с некоторой долей вероятности. Со 100% вероятностью тест можно пройти только при таком решении this.spring = Math.random() * (6 - 5) + 5; - и оно неправильное.  
+    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Текущее решение дает ошибку с некоторой долей вероятности. Со 100% вероятностью тест можно пройти только при таком решении this.spring = Math.random() + 5; - и оно неправильное.  
   }
   
   get type() {
@@ -348,7 +348,7 @@ class Player extends Actor {
   }
 }
 
-// Добавление уровней. 
+// Добавление уровней и запуск игры. 
 
 const actorDict = {
   '@': Player,
@@ -357,8 +357,8 @@ const actorDict = {
   '|': VerticalFireball,
   'v': FireRain
 }
-const parser = new LevelParser(actorDict);
 
+const parser = new LevelParser(actorDict);
 loadLevels()
   .then(JSON.parse)
   .then(levels => runGame(levels, parser, DOMDisplay)
