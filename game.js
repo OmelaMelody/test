@@ -26,10 +26,13 @@ class Actor {
   constructor(pos = new Vector(0, 0), size = new Vector(1, 1), speed = new Vector(0, 0)) {
     if (!(pos instanceof Vector)) {
       throw new Error('Переданные координаты не являются объектом типа Vector');
-      // else не нужен - если выполнение зайдёт в if и будет выброшено исключение - выполнение функции прекратится
-    } else if (!(size instanceof Vector)) {
+    } 
+    
+    if (!(size instanceof Vector)) {
       throw new Error('Переданный размер не является объектом типа Vector');
-    } else if (!(speed instanceof Vector)) {
+    } 
+    
+    if (!(speed instanceof Vector)) {
       throw new Error('Переданная скорость не является объектом типа Vector');
     }
     
@@ -66,8 +69,9 @@ class Actor {
     }
     if (actor === this) {
       return false;
-      // тут тоже не нужен else
-    } else if (actor.left >= this.right) {
+    } 
+    
+    if (actor.left >= this.right) {
       return false;
     } else if (actor.top >= this.bottom) {
       return false;
@@ -76,6 +80,7 @@ class Actor {
     } else if (actor.bottom <= this.top) {
       return false;
     }
+    
     return true;
   }
 }
@@ -84,37 +89,21 @@ class Actor {
 
 class Level {
   constructor (grid = [], actors = []) {
-    // тут нужно упростить всё :)
-    // Соня: ну, как смогла.
-    // Всё правильно
-
     // тут лучше создать копии массивов, чтобы их нельзя было модифицировать из вне
-    this.grid = grid;
-    this.actors = actors;
+    // Соня: В каких случаях нужно копировать массив, а когда можно работать с оригинальным?
+    this.grid = grid.slice();
+    this.actors = actors.slice();
     this.height = this.grid.length;
-      // actors 2 раза
-    this.actors = actors;
-    // лучше использовать 3 равно (===)
-    this.player = this.actors.find(actor => actor.type == "player");
+    this.player = this.actors.find(actor => actor.type === 'player');
     this.status = null;
     this.finishDelay = 1;
-  }
-  
-  get width() {
-    let max = 0;
-    // попробуйте написать через reduce
-    // и лучше это просто в конструкторе заполнить, чтобы каждый раз не считать
-    this.grid.forEach(elem => {
-      if (elem instanceof Array && max < elem.length) {
-        max = elem.length;
-      }
-    });
-    return max;
+    this.width = this.grid.reduce((prev, cur) => {
+      return cur.length > prev ? cur.length : prev;
+    }, 0);
   }
   
   isFinished() {
-    // тут без скобок можно обойтись
-    return (this.status !== null && this.finishDelay < 0);
+    return this.status !== null && this.finishDelay < 0;
   }
   
   actorAt(actor) {
@@ -122,94 +111,77 @@ class Level {
       throw new Error('Передан не движущийся объект типа Actor.');
     }
     return this.actors.find(elem => {
-      if (actor.isIntersect(elem)) {
-        return elem;
-      }
+      if (actor.isIntersect(elem)) return elem;
     });
   }
   
   obstacleAt(nextPos, size) {
-    if (nextPos instanceof Vector && size instanceof Vector) {
-      // всё что касается wall лучше в один if записать
-      if (nextPos.x < 0) {
-        return 'wall';
-      } else if (nextPos.y < 0) {
-        return 'wall';
-      } else if (nextPos.x + size.x > this.width) {
-        return 'wall';
-        // else не нужен, если if заканчивается на return
-      } else if ((nextPos.y + size.y) >= this.height) {
-        return 'lava';
-      }
-      let x, y, cell;
-      const xMin = Math.floor(nextPos.x);
-      const xMax = Math.ceil(nextPos.x + size.x);
-      const yMin = Math.floor(nextPos.y);
-      const yMax = Math.ceil(nextPos.y + size.y);
-      // Соня: если опять посоветуете уменьшить вложенность, то придется пояснить, как это сделать. Смогла только else убрать. Кажется, тут не нужно.
-      // Игорь: верхний if ещё обратить и кидать исключение как в остальных методах
-      for (let y = yMin; y < yMax; y++) {
-        for (let x = xMin; x < xMax; x++) {           
-          cell = this.grid[y][x]
-          if (cell) {
-            return cell;
-          }
-        }
+    if (!(nextPos instanceof Vector) || !(size instanceof Vector)) {
+      throw new Error('Переданные данные не являются объектом типа Vector.');
+    }
+    if (nextPos.x < 0 || nextPos.y < 0 || nextPos.x + size.x > this.width) {
+      return 'wall';
+      // else не нужен, если if заканчивается на return
+      // Соня: оставила внизу if, я правильно вас поняла?
+    } 
+    if ((nextPos.y + size.y) >= this.height) {
+      return 'lava';
+    }
+    let x, y, cell;
+    const xMin = Math.floor(nextPos.x);
+    const xMax = Math.ceil(nextPos.x + size.x);
+    const yMin = Math.floor(nextPos.y);
+    const yMax = Math.ceil(nextPos.y + size.y);
+    for (let y = yMin; y < yMax; y++) {
+      for (let x = xMin; x < xMax; x++) {           
+        cell = this.grid[y][x]
+        if (cell) return cell;
       }
     }
   }
   
   removeActor(actor) {
-    // const же
-    let i = this.actors.findIndex(elem => actor === elem);
+    const i = this.actors.findIndex(elem => actor === elem);
     if(i !== -1) {
       this.actors.splice(i, 1);
     }
   }
   
   noMoreActors(type) {
-    // лучше проверить длину массива и использовать метод some
-    // Соня: не поняла, зачем проверять длину массива. В массиве this.actors всегда что-то будет, хотя бы сам игрок.
-    // Игорь: да, тут всё правильно
     return !this.actors.some(elem => elem.type === type);
   }
   
   playerTouched(obstacle, coin) {
-    // обратить условие и уменьшить вложенность
-    // Соня: не поняла, как и зачем тут обращать условие, когда при (this.status !== 'null') вообще ничего делать не надо. Убрала проверку.
-
-    // Игорь: я имел в виду вот так:
-    // if (obstacle === 'lava' || obstacle === 'fireball') {
-    //   this.status = 'lost';
-    //   return;
-    // }
-    //
-    // if (obstacle === 'coin') {
-    //   this.removeActor(coin);
-    //   if (this.noMoreActors('coin')) {
-    //       this.status = 'won';
-    //   }
-    // }
-
-    // тут ещё нужно проверить текущий статус игры
-
-    if (obstacle === 'lava') {
+    if ((obstacle === 'lava' && this.status === null) || (obstacle === 'fireball' && this.status === null)) {
       this.status = 'lost';
-    } else if (obstacle === 'fireball') {
-      this.status = 'lost';
-    } else if (obstacle === 'coin') {
+    }
+    
+    if (obstacle === 'coin' && this.status === null) {
       this.removeActor(coin);
       if(this.noMoreActors('coin')) {
         this.status = 'won';
       }
     }
+    // Соня: скажите, а чем плохо такое решение с дополнительной вложенностью? По условию задачи как раз подходит: что-то делаем, если this.status === null, во всех остальных случаях не делаем ничего. 
+//    if (this.status === null) {
+//      if (obstacle === 'lava' || obstacle === 'fireball') {
+//        this.status = 'lost';
+//      } 
+//    
+//      if (obstacle === 'coin') {
+//        this.removeActor(coin);
+//        if(this.noMoreActors('coin')) {
+//          this.status = 'won';
+//        }
+//      }
+//    }
   }
 }
 
 // Парсер уровня.
 
 class LevelParser {
-  constructor (dictionary) {
+  constructor (dictionary = {}) {
     this.dictionary = dictionary;
     this.obstacle = {
       'x': 'wall',
@@ -218,12 +190,7 @@ class LevelParser {
   }
   
   actorFromSymbol(symbol) {
-    // можно убрать проверку this.dictionary[symbol] и так вернёт undefined для undefined
-    if (!symbol) {
-      return undefined;
-    } else {
-      return this.dictionary[symbol];
-    }
+    return this.dictionary[symbol];
   }
   
   obstacleFromSymbol(symbol) {
@@ -232,48 +199,45 @@ class LevelParser {
   
   createGrid(arr) {
     let obstacle = this.obstacle;
-    let grid = arr.map(elem => elem.split(''));
-    for (let i = 0; i < grid.length; i++) {
-      // это можно перенести в map выше
-      grid[i] = grid[i].map(elem => obstacle[elem]);
-    }
+    let grid = arr.map(elemY => elemY.split('').map(elemX => obstacle[elemX]));
     return grid;
   }
 
-  // лучше добавить значение по-умолчанию - пустой массив
-  createActors(arr) {
-    // в конструкторе тоже лучше добавить значение по-умолчанию для dictionary
-    // тогда можно будет убрать проверку ниже
-
+  createActors(arr = []) {
     // просто для справки можно вот так ещё писать:
-    // const { dictionary } = this;
-    const dictionary = this.dictionary;
-    if (dictionary === undefined || arr.length === 0) {
-      return [];
-    } 
+     const { dictionary } = this;
+    // Соня: спасибо! Оставлю ваш вариант, чтобы запомнить. 
     let actors = [];
-    let array = arr.map(elem => elem.split(''));
-    // можно обявить внутри forEach
     let key, obj;
-
-    // лучше использовать стрелочные функции, чтобы не терять this
-    array.forEach(function (elem, y) {
-      // Соня: наверняка вы скажете уменьшить вложенность, но я не представляю, как именно это сделать. Много условий, которые нужно проверить. 
-      // Игорь: если вместо for сделать forEach, то можно делать return если объект не удовлетворяет требованиям
-      // высший пилотаж это написать вместо двух циклов reduce
-      for (let x = 0; x < elem.length; x++) {
-        key = dictionary[elem[x]];
-        // здесь достаточно проверить typeof key === 'function'
-        if (key !== undefined && key instanceof Function) {
-          obj = new key(new Vector(x, y));
-          
-          if (obj instanceof Actor) {
-            actors.push(obj);
-          }
-        }
+    arr.map((elemY, y) => elemY.split('').forEach((elemX, x) => {
+      key = dictionary[elemX];
+      if (key === undefined || typeof key !== 'function') {
+        return;
       }
-    });
+
+      obj = new key(new Vector(x, y));
+      if (obj instanceof Actor) {
+        actors.push(obj);
+      }
+    }));
     return actors;
+
+//    array.forEach(function (elem, y) {
+//      // Игорь: если вместо for сделать forEach, то можно делать return если объект не удовлетворяет требованиям
+//      // высший пилотаж это написать вместо двух циклов reduce
+        // Соня: это слишком высший пилотаж. Если останется время - подумаю, пока комментарии не убираю. 
+//      for (let x = 0; x < elem.length; x++) {
+//        key = dictionary[elem[x]];
+//        if (key !== undefined && typeof key === 'function') {
+//          obj = new key(new Vector(x, y));
+//          
+//          if (obj instanceof Actor) {
+//            actors.push(obj);
+//          }
+//        }
+//      }
+//    });
+//    return actors;
   }
   
   parse(arr) {
@@ -287,8 +251,11 @@ class LevelParser {
 
 class Fireball extends Actor {
   // должен принимать 2 параметра
-  constructor(pos, speed, size = new Vector(1, 1)) {
-    super(pos, size, speed);
+  // Соня: так? Теперь верно?
+  constructor(pos, speed) {
+    super(pos);
+    this.speed = speed;
+    this.size = new Vector(1, 1);
   }
   
   get type() {
@@ -296,8 +263,7 @@ class Fireball extends Actor {
   }
   
   getNextPosition(time = 1) {
-    // тут нужно использовать методы plus и times
-    return new Vector(this.pos.x + this.speed.x * time, this.pos.y + this.speed.y * time);
+    return this.pos.plus(this.speed.times(time));
   }
   
   handleObstacle() {
@@ -307,11 +273,11 @@ class Fireball extends Actor {
   act(time, level) {
     const nextPosition = this.getNextPosition(time);
     const obstacle = level.obstacleAt(nextPosition, this.size);
-    // лучше обратить условие, чтобы в if небыло отрицания
-    if (!obstacle) {
-      this.pos = nextPosition;
-    } else {
+
+    if (obstacle) {
       this.handleObstacle();
+    } else {
+      this.pos = nextPosition;
     }
   }
 }
@@ -320,6 +286,7 @@ class Fireball extends Actor {
 
 class HorizontalFireball extends Fireball {
   // должен принимать 2 аргумент
+  // Соня: сейчас верно?
   constructor (pos, speed = new Vector(2, 0)) {
     super(pos, speed);
   }
@@ -327,6 +294,7 @@ class HorizontalFireball extends Fireball {
 
 class VerticalFireball extends Fireball {
   // должен принимать 2 аргумент
+  // Соня: должно быть так?
   constructor (pos, speed = new Vector(0, 2)) {
     super(pos, speed);
   }  
@@ -336,6 +304,7 @@ class VerticalFireball extends Fireball {
 
 class FireRain extends Fireball {
   // должен принимать 2 аргумент
+  // Соня: должно быть так?
   constructor(pos, speed = new Vector(0, 3)) {
     super(pos, speed);
     this.startPos = pos;
@@ -350,14 +319,12 @@ class FireRain extends Fireball {
 
 class Coin extends Actor {
   constructor(pos = new Vector(0, 0)) {
-    super(pos);
+    super(pos.plus(new Vector(0.2, 0.1)));
     this.basePosition = pos.plus(new Vector(0.2, 0.1));
-    this.pos = pos.plus(new Vector(0.2, 0.1));
     this.size = new Vector(0.6, 0.6);
     this.springSpeed = 8;
     this.springDist = 0.07;
-    this.spring = Math.random() * 2 * Math.PI;
-    // Соня: в тесте проверяется не случайное число умноженное на 2пи, а число от 5 до 6. Текущее решение дает ошибку с некоторой долей вероятности. Со 100% вероятностью тест можно пройти только при таком решении this.spring = Math.random() + 5; - и оно неправильное.  
+    this.spring = Math.random() * 2 * Math.PI; 
   }
   
   get type() {
@@ -379,9 +346,7 @@ class Coin extends Actor {
   }
   
   act(time) {
-    // getNextPosition уже возвращает вектор, второй создавать не нужно
-    let newPosition = this.getNextPosition(time);
-    this.pos = new Vector(newPosition.x, newPosition.y);
+    this.pos = this.getNextPosition(time);
   }
 }
 
@@ -389,10 +354,12 @@ class Coin extends Actor {
 
 class Player extends Actor {
   // конструктор должен принимать 1 аргумент
-  constructor(pos = new Vector(0, 0), size = new Vector(0.8, 1.5), speed = new Vector(0, 0)) {
-    super(pos, size, speed);
-    // pos должно задаваться через конструктор базового класса
-    this.pos = pos.plus(new Vector(0, -0.5));
+  // Соня: так?
+  constructor(pos = new Vector(0, 0)) {
+    super(pos.plus(new Vector(0, -0.5)));
+    // pos должно задаваться через конструктор базового класса.
+    this.size = new Vector(0.8, 1.5);
+    this.speed = new Vector(0, 0);
   }
   
   get type() {
@@ -408,8 +375,32 @@ const actorDict = {
   '=': HorizontalFireball,
   '|': VerticalFireball,
   'v': FireRain
-// точка с запятой
-}
+};
+//const schemas = [
+//  [
+//    '        v',
+//    ' x       ',
+//    '         ',
+//    '      o @',
+//    '     !xxx',
+//    '         ',
+//    'xxx!     ',
+//    '    |    '
+//  ],
+//  [
+//    '      v  ',
+//    '    v    ',
+//    '  v      ',
+//    '        o',
+//    '        x',
+//    '@   x    ',
+//    'x        ',
+//    '         '
+//  ]
+//];
+//const parser = new LevelParser(actorDict);
+//runGame(schemas, parser, DOMDisplay)
+//  .then(() => console.log('Вы выиграли приз!'));
 
 const parser = new LevelParser(actorDict);
 loadLevels()
