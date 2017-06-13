@@ -1,6 +1,6 @@
 'use strict';
 
-//Реализация класса Vector.
+//Реализация векторов — class Vector.
 
 class Vector {
   constructor(x = 0, y = 0) {
@@ -20,7 +20,7 @@ class Vector {
   }
 }
 
-//Реализация класса движущегося объекта.
+//Реализация движущегося объекта — class Actor.
 
 class Actor {
   constructor(pos = new Vector(0, 0), size = new Vector(1, 1), speed = new Vector(0, 0)) {
@@ -67,6 +67,7 @@ class Actor {
     if (!(actor instanceof Actor)) {
       throw new Error('Переданный объект не является экземпляром Actor.');
     }
+    
     if (actor === this) {
       return false;
     } 
@@ -85,12 +86,10 @@ class Actor {
   }
 }
 
-// Реализация класса Level.
+// Формирование уровня — class Level.
 
 class Level {
   constructor (grid = [], actors = []) {
-    // тут лучше создать копии массивов, чтобы их нельзя было модифицировать из вне
-    // Соня: В каких случаях нужно копировать массив, а когда можно работать с оригинальным?
     this.grid = grid.slice();
     this.actors = actors.slice();
     this.height = this.grid.length;
@@ -119,22 +118,22 @@ class Level {
     if (!(nextPos instanceof Vector) || !(size instanceof Vector)) {
       throw new Error('Переданные данные не являются объектом типа Vector.');
     }
+    
     if (nextPos.x < 0 || nextPos.y < 0 || nextPos.x + size.x > this.width) {
       return 'wall';
-      // else не нужен, если if заканчивается на return
-      // Соня: оставила внизу if, я правильно вас поняла?
-    } 
+    }
+    
     if ((nextPos.y + size.y) >= this.height) {
       return 'lava';
     }
-    let x, y, cell;
+    
     const xMin = Math.floor(nextPos.x);
     const xMax = Math.ceil(nextPos.x + size.x);
     const yMin = Math.floor(nextPos.y);
     const yMax = Math.ceil(nextPos.y + size.y);
     for (let y = yMin; y < yMax; y++) {
       for (let x = xMin; x < xMax; x++) {           
-        cell = this.grid[y][x]
+        const cell = this.grid[y][x]
         if (cell) return cell;
       }
     }
@@ -152,33 +151,24 @@ class Level {
   }
   
   playerTouched(obstacle, coin) {
-    if ((obstacle === 'lava' && this.status === null) || (obstacle === 'fireball' && this.status === null)) {
+    if (this.status !== null) {
+      return;
+    }
+    
+    if (obstacle === 'lava' || obstacle === 'fireball') {
       this.status = 'lost';
     }
     
-    if (obstacle === 'coin' && this.status === null) {
+    if (obstacle === 'coin') {
       this.removeActor(coin);
       if(this.noMoreActors('coin')) {
         this.status = 'won';
       }
     }
-    // Соня: скажите, а чем плохо такое решение с дополнительной вложенностью? По условию задачи как раз подходит: что-то делаем, если this.status === null, во всех остальных случаях не делаем ничего. 
-//    if (this.status === null) {
-//      if (obstacle === 'lava' || obstacle === 'fireball') {
-//        this.status = 'lost';
-//      } 
-//    
-//      if (obstacle === 'coin') {
-//        this.removeActor(coin);
-//        if(this.noMoreActors('coin')) {
-//          this.status = 'won';
-//        }
-//      }
-//    }
   }
 }
 
-// Парсер уровня.
+// Создание парсера уровней — class LevelParser.
 
 class LevelParser {
   constructor (dictionary = {}) {
@@ -198,64 +188,41 @@ class LevelParser {
   }
   
   createGrid(arr) {
-    let obstacle = this.obstacle;
-    let grid = arr.map(elemY => elemY.split('').map(elemX => obstacle[elemX]));
-    return grid;
+    return arr.map(elemY => elemY.split('').map(elemX => this.obstacle[elemX]));
   }
 
   createActors(arr = []) {
-    // просто для справки можно вот так ещё писать:
-     const { dictionary } = this;
-    // Соня: спасибо! Оставлю ваш вариант, чтобы запомнить. 
-    let actors = [];
-    let key, obj;
-    arr.map((elemY, y) => elemY.split('').forEach((elemX, x) => {
-      key = dictionary[elemX];
+    const { dictionary } = this; 
+    const actors = [];
+    
+    arr.forEach((elemY, y) => elemY.split('').forEach((elemX, x) => {
+      const key = dictionary[elemX];
       if (key === undefined || typeof key !== 'function') {
         return;
       }
 
-      obj = new key(new Vector(x, y));
+      const obj = new key(new Vector(x, y));
       if (obj instanceof Actor) {
         actors.push(obj);
       }
     }));
+    
     return actors;
-
-//    array.forEach(function (elem, y) {
-//      // Игорь: если вместо for сделать forEach, то можно делать return если объект не удовлетворяет требованиям
-//      // высший пилотаж это написать вместо двух циклов reduce
-        // Соня: это слишком высший пилотаж. Если останется время - подумаю, пока комментарии не убираю. 
-//      for (let x = 0; x < elem.length; x++) {
-//        key = dictionary[elem[x]];
-//        if (key !== undefined && typeof key === 'function') {
-//          obj = new key(new Vector(x, y));
-//          
-//          if (obj instanceof Actor) {
-//            actors.push(obj);
-//          }
-//        }
-//      }
-//    });
-//    return actors;
   }
   
   parse(arr) {
     const grid = this.createGrid(arr);
     const actors = this.createActors(arr);
+    
     return new Level(grid, actors);
   }
 }
 
-// Описание класса "Шаровая молния". 
+// Создание шаровой молнии — class Fireball. 
 
 class Fireball extends Actor {
-  // должен принимать 2 параметра
-  // Соня: так? Теперь верно?
   constructor(pos, speed) {
-    super(pos);
-    this.speed = speed;
-    this.size = new Vector(1, 1);
+    super(pos, new Vector(1, 1), speed);
   }
   
   get type() {
@@ -282,31 +249,25 @@ class Fireball extends Actor {
   }
 }
 
-// Описание горизонтальной и вертикальной шаровых молний. 
+// Создание горизонтальной и вертикальной шаровых молний. 
 
 class HorizontalFireball extends Fireball {
-  // должен принимать 2 аргумент
-  // Соня: сейчас верно?
-  constructor (pos, speed = new Vector(2, 0)) {
-    super(pos, speed);
+  constructor (pos) {
+    super(pos, new Vector(2, 0));
   }
 }
 
 class VerticalFireball extends Fireball {
-  // должен принимать 2 аргумент
-  // Соня: должно быть так?
-  constructor (pos, speed = new Vector(0, 2)) {
-    super(pos, speed);
+  constructor (pos) {
+    super(pos, new Vector(0, 2));
   }  
 }
 
-// Описание Огненного дождя. 
+// Создание огненного дождя — class FireRain. 
 
 class FireRain extends Fireball {
-  // должен принимать 2 аргумент
-  // Соня: должно быть так?
-  constructor(pos, speed = new Vector(0, 3)) {
-    super(pos, speed);
+  constructor(pos) {
+    super(pos, new Vector(0, 3));
     this.startPos = pos;
   }
   
@@ -315,13 +276,12 @@ class FireRain extends Fireball {
   }
 }
 
-// Описание монеты.
+// Добавление монеты — class Coin.
 
 class Coin extends Actor {
-  constructor(pos = new Vector(0, 0)) {
-    super(pos.plus(new Vector(0.2, 0.1)));
+  constructor(pos) {
+    super(pos.plus(new Vector(0.2, 0.1)), new Vector (0.6, 0.6));
     this.basePosition = pos.plus(new Vector(0.2, 0.1));
-    this.size = new Vector(0.6, 0.6);
     this.springSpeed = 8;
     this.springDist = 0.07;
     this.spring = Math.random() * 2 * Math.PI; 
@@ -350,16 +310,11 @@ class Coin extends Actor {
   }
 }
 
-// Описание игрока. 
+// Описание игрока — class Player. 
 
 class Player extends Actor {
-  // конструктор должен принимать 1 аргумент
-  // Соня: так?
-  constructor(pos = new Vector(0, 0)) {
-    super(pos.plus(new Vector(0, -0.5)));
-    // pos должно задаваться через конструктор базового класса.
-    this.size = new Vector(0.8, 1.5);
-    this.speed = new Vector(0, 0);
+  constructor(pos) {
+    super(pos.plus(new Vector(0, -0.5)), new Vector(0.8, 1.5), new Vector(0, 0));
   }
   
   get type() {
@@ -376,33 +331,8 @@ const actorDict = {
   '|': VerticalFireball,
   'v': FireRain
 };
-//const schemas = [
-//  [
-//    '        v',
-//    ' x       ',
-//    '         ',
-//    '      o @',
-//    '     !xxx',
-//    '         ',
-//    'xxx!     ',
-//    '    |    '
-//  ],
-//  [
-//    '      v  ',
-//    '    v    ',
-//    '  v      ',
-//    '        o',
-//    '        x',
-//    '@   x    ',
-//    'x        ',
-//    '         '
-//  ]
-//];
-//const parser = new LevelParser(actorDict);
-//runGame(schemas, parser, DOMDisplay)
-//  .then(() => console.log('Вы выиграли приз!'));
-
 const parser = new LevelParser(actorDict);
+
 loadLevels()
   .then(JSON.parse)
   .then(levels => runGame(levels, parser, DOMDisplay)
