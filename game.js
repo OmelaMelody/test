@@ -320,7 +320,7 @@ class Player extends Actor {
   get type() {
     return 'player';
   }
-}
+} 
 
 // Добавление уровней и запуск игры. 
 
