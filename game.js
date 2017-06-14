@@ -74,11 +74,17 @@ class Actor {
     
     if (actor.left >= this.right) {
       return false;
-    } else if (actor.top >= this.bottom) {
+    }
+    
+    if (actor.top >= this.bottom) {
       return false;
-    } else if (actor.right <= this.left) {
+    }
+    
+    if (actor.right <= this.left) {
       return false;
-    } else if (actor.bottom <= this.top) {
+    }
+    
+    if (actor.bottom <= this.top) {
       return false;
     }
     
@@ -197,7 +203,7 @@ class LevelParser {
     
     arr.forEach((elemY, y) => elemY.split('').forEach((elemX, x) => {
       const key = dictionary[elemX];
-      if (key === undefined || typeof key !== 'function') {
+      if (typeof key !== 'function') {
         return;
       }
 
@@ -281,7 +287,7 @@ class FireRain extends Fireball {
 class Coin extends Actor {
   constructor(pos) {
     super(pos.plus(new Vector(0.2, 0.1)), new Vector (0.6, 0.6));
-    this.basePosition = pos.plus(new Vector(0.2, 0.1));
+    this.basePosition = this.pos;
     this.springSpeed = 8;
     this.springDist = 0.07;
     this.spring = Math.random() * 2 * Math.PI; 
@@ -314,7 +320,9 @@ class Coin extends Actor {
 
 class Player extends Actor {
   constructor(pos) {
-    super(pos.plus(new Vector(0, -0.5)), new Vector(0.8, 1.5), new Vector(0, 0));
+    const position = pos.plus(new Vector(0, -0.5));
+    const size = new Vector(0.8, 1.5);
+    super(position, size);
   }
   
   get type() {
