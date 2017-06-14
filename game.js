@@ -115,9 +115,7 @@ class Level {
     if (!(actor instanceof Actor)) {
       throw new Error('Передан не движущийся объект типа Actor.');
     }
-    return this.actors.find(elem => {
-      if (actor.isIntersect(elem)) return elem;
-    });
+    return this.actors.find(elem => actor.isIntersect(elem));
   }
   
   obstacleAt(nextPos, size) {
