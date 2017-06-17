@@ -144,7 +144,7 @@ class Level {
   }
   
   removeActor(actor) {
-    const i = this.actors.findIndex(elem => actor === elem);
+    const i = this.actors.indexOf(actor);
     if(i !== -1) {
       this.actors.splice(i, 1);
     }
